@@ -1,9 +1,6 @@
-import pandas as pd
-import numpy as np
 import yfinance as yf
-from datetime import datetime, timedelta
 import logging
-
+import pandas as pd
 
 class DataCollector:
     """
@@ -14,39 +11,39 @@ class DataCollector:
         """Initialize the data collector with optional custom logger"""
         self.logger = logger or logging.getLogger(__name__)
 
-    def fetch_historical_data(self, symbols, period="1y", interval="1d"):
+    def fetch_historical_data(self, ticker_symbols, period="1y", interval="1d"):
         """
         Fetch historical price data for the given symbols
 
         Args:
-            symbols (list): List of ticker symbols
+            ticker_symbols (list): List of ticker symbols
             period (str): Data period (e.g., '1d', '1mo', '1y')
             interval (str): Data interval (e.g., '1m', '1h', '1d')
 
         Returns:
             dict: Dictionary mapping symbols to their respective dataframes
         """
-        self.logger.info(f"Fetching historical data for {len(symbols)} symbols")
-        data = {}
+        self.logger.info(f"Fetching historical data for {len(ticker_symbols)} symbols")
+        previous_data = {}
 
-        for symbol in symbols:
+        for ticker_symbol in ticker_symbols:
             try:
-                ticker = yf.Ticker(symbol)
+                ticker = yf.Ticker(ticker_symbol)
                 df = ticker.history(period=period, interval=interval)
 
                 if df.empty:
-                    self.logger.warning(f"No data found for {symbol}")
+                    self.logger.warning(f"No data found for {ticker_symbol}")
                     continue
 
                 # Basic preprocessing
                 df = self.preprocess_data(df)
-                data[symbol] = df
-                self.logger.debug(f"Successfully fetched data for {symbol}")
+                previous_data[ticker_symbol] = df
+                self.logger.debug(f"Successfully fetched data for {ticker_symbol}")
 
             except Exception as e:
-                self.logger.error(f"Error fetching data for {symbol}: {str(e)}")
+                self.logger.error(f"Error fetching data for {ticker_symbol}: {str(e)}")
 
-        return data
+        return previous_data
 
     def preprocess_data(self, df):
         """
@@ -95,35 +92,35 @@ class DataCollector:
 
         return df
 
-    def fetch_real_time_data(self, symbols):
+    def fetch_real_time_data(self, ticker_symbols):
         """
         Fetch the latest market data for the given symbols
 
         Args:
-            symbols (list): List of ticker symbols
+            ticker_symbols (list): List of ticker symbols
 
         Returns:
             dict: Dictionary mapping symbols to their respective latest data
         """
-        self.logger.info(f"Fetching real-time data for {len(symbols)} symbols")
-        data = {}
+        self.logger.info(f"Fetching real-time data for {len(ticker_symbols)} symbols")
+        previous_data = {}
 
-        for symbol in symbols:
+        for ticker_symbol in ticker_symbols:
             try:
-                ticker = yf.Ticker(symbol)
+                ticker = yf.Ticker(ticker_symbol)
                 latest = ticker.history(period="1d")
 
                 if latest.empty:
-                    self.logger.warning(f"No real-time data found for {symbol}")
+                    self.logger.warning(f"No real-time data found for {ticker_symbol}")
                     continue
 
-                data[symbol] = latest.iloc[-1].to_dict()
-                self.logger.debug(f"Successfully fetched real-time data for {symbol}")
+                previous_data[ticker_symbol] = latest.iloc[-1].to_dict()
+                self.logger.debug(f"Successfully fetched real-time data for {ticker_symbol}")
 
             except Exception as e:
-                self.logger.error(f"Error fetching real-time data for {symbol}: {str(e)}")
+                self.logger.error(f"Error fetching real-time data for {ticker_symbol}: {str(e)}")
 
-        return data
+        return previous_data
 
 
 # Usage example:
@@ -144,4 +141,7 @@ if __name__ == "__main__":
     # Print a sample of the data
     for symbol, data in historical_data.items():
         print(f"\n=== {symbol} Data Sample ===")
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.width', None)  # Auto-detect terminal width
+        pd.set_option('display.expand_frame_repr', False)
         print(data.tail(3))
